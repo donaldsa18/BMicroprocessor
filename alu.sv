@@ -5,7 +5,7 @@ module alu(Rc,Ra,Rb,opcode)
 	output [DWIDTH-1:0] Rc;
 	input signed [DWIDTH-1:0] Ra,Rb;
 	input [5:0] opcode;
-	//TODO: use memory controller to access registers
+	
 	always @(*) begin
 		case(opcode)
 			ADD: Rc <= Ra + Rb;

@@ -1,4 +1,3 @@
-`include "instructions.svh"
 `include "params.svh"
 
 module ram(data,addr,rdEn,wrEn,clk)

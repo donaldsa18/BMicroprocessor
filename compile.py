@@ -30,9 +30,11 @@ def main():
     instructions = {
         "LD": 0b011000,
         "ST": 0b011001,
+        "DISP": 0b010010,
         "JMP": 0b011011,
         "BEQ": 0b011100,
         "BNE": 0b011101,
+        "DISPC": 0b011110,
         "LDR": 0b011111,
         "ADD": 0b100000,
         "SUB": 0b100001,
@@ -151,6 +153,10 @@ def main():
                     elif upper_opcode == "LDR":
                         inst += "{:05b}_{:05b}_{:016b}".format(registers[args_stripped[1]], 0,
                                                              twos_comp((line.inum + 1 - labels[line.arg2]), 16))
+                    elif upper_opcode == "DISP":
+                        inst += "{:05b}_{:05b}_{:016b}".format(registers[args_stripped[0]], 0, 0)
+                    elif upper_opcode == "DISPC":
+                        inst += "{:05b}_{:05b}_{:016b}".format(0, 0, int(line.arg2))
                     else:
                         print("Error: this shouldn't happen. Opcode='{}'".format(upper_opcode))
                 # Check if constant math operation
