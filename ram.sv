@@ -16,7 +16,7 @@ integer i;
 initial begin
 	/*for(i = 0; i < MEMDEPTH; i++)
 		mem[i] = 0;*/
-	$readmemh("program.hex", data);
+	$readmemb("program.bin", data);
 end
 
 always @(posedge clk) begin

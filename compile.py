@@ -5,7 +5,6 @@ import binascii
 
 
 class SourceLine:
-
     def __init__(self, line_num, inum, line, opcode, arg1, arg2, arg3):
         self.line_num = line_num
         self.inum = inum
@@ -14,6 +13,13 @@ class SourceLine:
         self.arg1 = arg1
         self.arg2 = arg2
         self.arg3 = arg3
+
+
+def twos_comp(val, bits):
+    """compute the 2's complement of int value val"""
+    if (val & (1 << (bits - 1))) != 0:  # if sign bit is set e.g., 8bit: 128-255
+        val = val - (1 << bits)  # compute negative value
+    return val  # return positive value as is
 
 
 def main():
@@ -102,61 +108,76 @@ def main():
     labels = {}
     icount = 0
     sourcelines = []
-    with open("program.hex", "w") as fout:
+    with open("program.bin", "w") as fout:
         with open(filepath) as fin:
             linecount = 0
             for line in fin:
                 linecount += 1
                 line = line.strip().split(';')[0]
                 m = re_label.match(line)
-                if m is not none:
+                if m is not None:
                     labels[m.group('label')] = icount + 1
                 m = re_line.match(line)
                 if m is not None:
-                    sourcelines.append((linecount, icount, line, m.group('instr'), m.group('argc'), m.group('arga'), m.group('argb')))
+                    sourcelines.append(
+                        SourceLine(linecount, icount, line, m.group('instr'), m.group('argc'), m.group('arga'),
+                                   m.group('argb')))
+                    print("Line {}: Found label {}({},{},{})".format(linecount, m.group('instr'), m.group('argc'),
+                                                                     m.group('arga'), m.group('argb')))
                     icount += 1
-        hexlines = []
         for line in sourcelines:
-            if upper(line.opcode) in instructions:
-                upper_opcode = upper(line.opcode)
+            if line.opcode.upper() in instructions:
+                upper_opcode = line.opcode.upper()
                 opcode = instructions[upper_opcode]
-                inst = opcode << 26
-                args_stripped = [line.arg1.replace("$", ""), line.arg2.replace("$", ""), line.arg3.replace("$", "")]
-                # Check if math operation
-                if 0b100000 & opcode:
-                    for arg in args_stripped:
-                        if upper(arg) not in registers:
-                            print("Line {}: {} is not a register".format(line.line_num, arg1stripped))
-                            sys.exit()
-
-                    inst += registers[args_stripped[0]] << 21 + registers[args_stripped[1]] << 16 + registers[args_stripped[2]] << 11
-                    hexlines.append(inst)
+                inst = "{:06b}_".format(opcode)
+                args_stripped = [line.arg1.replace("$", "").upper(), line.arg2.replace("$", "").upper(),
+                                 line.arg3.replace("$", "").upper()]
+                # print(args_stripped)
+                opcode_cat = opcode >> 3
+                # Special instruction
+                if opcode_cat == 0b011:
+                    if upper_opcode == "LD":
+                        inst += "{:05b}_{:05b}_{:016b}".format(registers[args_stripped[2]], registers[args_stripped[0]],
+                                                             twos_comp(int(line.arg2), 16))
+                    elif upper_opcode == "ST":
+                        inst += "{:05b}_{:05b}_{:016b}".format(registers[args_stripped[0]], registers[args_stripped[2]],
+                                                             twos_comp(int(line.arg2), 16))
+                    elif upper_opcode == "JMP":
+                        inst += "{:05b}_{:05b}_{:016b}".format(registers[args_stripped[1]], registers[args_stripped[0]],
+                                                             0)
+                    elif upper_opcode in ["BEQ", "BNE"]:
+                        inst += "{:05b}_{:05b}_{:016b}".format(registers[args_stripped[2]], registers[args_stripped[0]],
+                                                             twos_comp((line.inum + 1 - labels[line.arg2]), 16))
+                    elif upper_opcode == "LDR":
+                        inst += "{:05b}_{:05b}_{:016b}".format(registers[args_stripped[1]], 0,
+                                                             twos_comp((line.inum + 1 - labels[line.arg2]), 16))
+                    else:
+                        print("Error: this shouldn't happen. Opcode='{}'".format(upper_opcode))
                 # Check if constant math operation
-                elif 0b110000 & opcode:
+                elif opcode_cat == 0b110:
                     args_stripped = args_stripped[-1]
                     for arg in args_stripped:
-                        if upper(arg) not in registers:
-                            print("Line {}: {} is not a register".format(line.line_num, arg1stripped))
+                        if arg not in registers:
+                            print("Line {}: {} is not a register (const) opcode={}".format(line.line_num, arg, opcode))
                             sys.exit()
                     if not line.arg3.isdigit():
                         print("Line {}: Literal {} is not a number".format(line.line_num, line.arg3))
                         sys.exit()
-                    inst += registers[args_stripped[0]] << 21 + registers[args_stripped[1]] << 16 + int(line.arg3)
-                # Special instruction
-                elif 0b011000 & opcode:
-                    if upper_opcode is "LD":
-                        inst += registers[args_stripped[2]] << 21 + registers[args_stripped[0]] << 16 + int(line.arg2)
-                    elif upper_opcode is "ST":
-                        inst += registers[args_stripped[0]] << 21 + registers[args_stripped[2]] << 16 + int(line.arg2)
-                    elif upper_opcode is "JMP":
-                        inst += registers[args_stripped[1]] << 21 + registers[args_stripped[0]] << 16 + labels[line.arg2]
-                    elif upper_opcode in ["BEQ", "BNE"]:
-                        inst += registers[args_stripped[2]] << 21 + registers[args_stripped[0]] << 16 + labels[line.arg2]
-                    elif upper_opcode is "LDR":
-                        inst += registers[args_stripped[1]] << 21
-                fout.write('{:04x} //%s'.format(inst, line.line))
+                    inst += "{:05b}_{:05b}_{:016b}".format(registers[args_stripped[2]], registers[args_stripped[0]],
+                                                         twos_comp(int(line.arg2), 16))
+                # Check if math operation
+                elif opcode_cat == 0b100:
+                    for arg in args_stripped:
+                        if arg not in registers:
+                            print("Line {}: {} is not a register (math)".format(line.line_num, arg))
+                            sys.exit()
+                    inst += "{:05b}_{:05b}_{:05b}_{:011}".format(registers[args_stripped[2]], registers[args_stripped[0]],
+                                                              registers[args_stripped[1]], 0)
+                fout.write('{} //{}\n'.format(inst, line.line))
+
             else:
-                print("Line %d: invalid instruction %s" % (line.line_num, line.opcode))
+                print("Line %d: invalid instruction %s".format(line.line_num, line.opcode))
+    print("Done!")
 
 
 if __name__ == '__main__':
