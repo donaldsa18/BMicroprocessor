@@ -3,7 +3,7 @@ module cpu_tb;
 reg clk, reset;
 wire [6:0] tx;
 
-cpu(tx,clk,reset);
+cpu c(tx,clk,reset);
 
 initial begin
 	clk = 1'b1;
@@ -16,7 +16,7 @@ initial begin
 	#200 $stop;
 end
 	
-initial begin
+always @(negedge clk) begin
 	if(tx != 0)
 		$write("%c", tx);
 end

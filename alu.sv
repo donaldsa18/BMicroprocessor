@@ -6,6 +6,9 @@ module alu(Rc,Ra,Rb,opcode);
 	input signed [DWIDTH-1:0] Ra,Rb;
 	input [5:0] opcode;
 	
+	initial
+		Rc = 0;
+	
 	always @(*) begin
 		case(opcode)
 			ADD: Rc <= Ra + Rb;

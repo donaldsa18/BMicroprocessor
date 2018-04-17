@@ -43,9 +43,15 @@ integer i;
 
 //Submodules - memory controller has a memory module
 //ALU has registers for Ra&Rb input and wire Rc for ouput
-MemControl mc(data,MAR,clk,rw,valid);
+MemControl mc(data,MAR,clk,reset,rw,valid);
+
 alu math(ARc,ARa,ARb,IR.regular.opcode);
+
 initial begin
+	reset_cpu;
+end
+
+task reset_cpu;
 	rw = 0;
 	valid = 0;
 	MAR = 0;
@@ -54,19 +60,21 @@ initial begin
 	ARa = 0;
 	ARb = 0;
 	IR = 0;
+	tx = 0;
 	for(i = 0; i < NUM_REGS; i++)
 		R[i] = 0;
-end
+endtask
 
 //Reads the memory location in MAR and writes to MDR
 task readMem;
+	wait(~clk);
 	valid = 1'b1;
 	rw = 1'b1;
-	wait(~clk);
 	wait(clk);
+	wait(~clk);
 	MDR = data;
-	wait(~clk);
 	wait(clk);
+	wait(~clk);
 	valid = 1'b0;
 endtask
 
@@ -74,12 +82,11 @@ assign data = (rw == 1'b0 && valid == 1'b1) ? MDR : {DWIDTH{1'bz}};
 
 //Writes data in MDR to main memory
 task writeMem;
+	wait(~clk);
 	valid = 1'b1;
 	rw = 1'b0;
-	wait(~clk);
 	wait(clk);
 	wait(~clk);
-	wait(clk);
 	valid = 1'b0;
 endtask
 	
@@ -92,8 +99,8 @@ task readInstruction;
 	wait(clk);
 	IR = data;
 	wait(~clk);
-	wait(clk);
 	valid = 1'b0;
+	
 endtask
 
 //Does an ALU instruction
@@ -122,16 +129,8 @@ task invalidop;
 endtask
 
 always @(posedge clk or negedge reset) begin
-	if(reset == 1'b0) begin
-		rw = 0;
-		valid = 0;
-		MAR = 0;
-		MDR = 0;
-		PC = 0;
-		ARa = 0;
-		ARb = 0;
-		IR = 0;
-	end
+	if(reset == 1'b0)
+		reset_cpu;
 	else begin
 		//Check if in error state before executing
 		if(R[30] == 0) begin
@@ -197,9 +196,9 @@ always @(posedge clk or negedge reset) begin
 				endcase
 			end
 		end
-		if(len(txbuf) != 0) begin
+		if(txbuf.len() != 0) begin
 			tx = txbuf[0];
-			txbuf = txbuf.substr(1,len(txbuf)-1);
+			txbuf = txbuf.substr(1,txbuf.len()-1);
 		end
 		else
 			tx = 0;
