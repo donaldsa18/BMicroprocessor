@@ -1,8 +1,8 @@
-`include "instructions.svh"
-`include "params.svh"
 
-module alu(Rc,Ra,Rb,opcode)
+module alu(Rc,Ra,Rb,opcode);
+	import InstructionStruct::*;
 	output [DWIDTH-1:0] Rc;
+	reg [DWIDTH-1:0] Rc;
 	input signed [DWIDTH-1:0] Ra,Rb;
 	input [5:0] opcode;
 	

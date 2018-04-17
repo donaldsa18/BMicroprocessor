@@ -1,9 +1,11 @@
-`include "params.svh"
+
+module cpu(tx,clk,reset);
 
 import InstructionStruct::*;
-module cpu(tx,clk,reset);
+
 //Can print characters using this output
 output [6:0] tx;
+reg [6:0] tx;
 
 //Serial output buffer
 string txbuf = "";
@@ -34,7 +36,7 @@ reg [CPUAWIDTH-1:0] PC;
 
 //ALU registers
 reg [DWIDTH-1:0] ARa,ARb;
-wire reg [DWIDTH-1:0] ARc;
+wire [DWIDTH-1:0] ARc;
 
 //for loops
 integer i;
@@ -49,8 +51,6 @@ initial begin
 	MAR = 0;
 	MDR = 0;
 	PC = 0;
-	data = {DWIDTH{1'bz}};
-	ARc = 0;
 	ARa = 0;
 	ARb = 0;
 	IR = 0;
@@ -70,9 +70,10 @@ task readMem;
 	valid = 1'b0;
 endtask
 
+assign data = (rw == 1'b0 && valid == 1'b1) ? MDR : {DWIDTH{1'bz}};
+
 //Writes data in MDR to main memory
 task writeMem;
-	data = MDR;
 	valid = 1'b1;
 	rw = 1'b0;
 	wait(~clk);
@@ -80,7 +81,6 @@ task writeMem;
 	wait(~clk);
 	wait(clk);
 	valid = 1'b0;
-	data = {DWIDTH{1'bz}};
 endtask
 	
 //Reads the instruction in PC and writes to IR
@@ -128,8 +128,6 @@ always @(posedge clk or negedge reset) begin
 		MAR = 0;
 		MDR = 0;
 		PC = 0;
-		data = {DWIDTH{1'bz}};
-		ARc = 0;
 		ARa = 0;
 		ARb = 0;
 		IR = 0;

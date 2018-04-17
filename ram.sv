@@ -1,7 +1,6 @@
-`include "params.svh"
 
-module ram(data,addr,rdEn,wrEn,clk)
-
+module ram(data,addr,rdEn,wrEn,clk);
+import InstructionStruct::*;
 inout [DWIDTH-1:0] data;
 input [AWIDTH-1:0] addr;
 input rdEn,wrEn,clk;

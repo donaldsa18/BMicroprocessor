@@ -1,5 +1,6 @@
 package InstructionStruct;
-typedef enum opcode[5:0] {
+`include "params.svh"
+typedef enum bit [5:0] {
 	LD = 6'b011000,
 	ST = 6'b011001,
 	DISP = 6'b011010, //a new instruction for displaying text
@@ -22,7 +23,7 @@ typedef enum opcode[5:0] {
 	SHL = 6'b101100,
 	SHR = 6'b101101,
 	SRA = 6'b101110,
-	ADDC = 6'b101000,
+	ADDC = 6'b110000,
 	SUBC = 6'b110001,
 	MULC = 6'b110010,
 	DIVC = 6'b110011,
@@ -59,4 +60,4 @@ typedef union packed {
 	bit [31:0] bits;
 } instruction_t;
 
-endpackage
+endpackage : InstructionStruct
