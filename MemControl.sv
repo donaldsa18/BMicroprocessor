@@ -26,7 +26,7 @@ initial begin
 	ramAddr = 0;
 end
 
-always @(posedge clk) begin
+always @(negedge clk) begin
 	if(valid) begin
 		if(rw) begin //read operation
 			ramAddr = addr[AWIDTH+2:2];
