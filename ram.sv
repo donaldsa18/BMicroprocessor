@@ -15,7 +15,7 @@ integer i;
 task reset_mem;
 	for(i = 0; i < MEMDEPTH; i++)
 		mem[i] = i;
-	$readmemb("program.bin", mem, 0, MEMDEPTH-1);
+	$readmemb("program.bin", mem);//, 0, MEMDEPTH-1);
 endtask
 
 initial

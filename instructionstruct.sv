@@ -36,8 +36,11 @@ typedef enum bit [5:0] {
 	XNORC = 6'b111011,
 	SHLC = 6'b111100,
 	SHRC = 6'b111101,
-	SRAC = 6'b111110
+	SRAC = 6'b111110,
+	EXIT = 6'b000000
 } opcode_t;
+
+typedef enum {request_instruction,read_instruction,exec_instruction,handle_ld,disable_mem_ld,disable_mem_st,handle_ldr,handle_alu,trap,two_empty_cycles,empty_cycle} cpu_state_t;
 
 typedef struct packed {
 	opcode_t opcode;

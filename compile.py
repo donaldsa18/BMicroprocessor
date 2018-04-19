@@ -64,7 +64,8 @@ class BCompiler:
             "XNORC": 0b111011,
             "SHLC": 0b111100,
             "SHRC": 0b111101,
-            "SRAC": 0b111110
+            "SRAC": 0b111110,
+            "TRAP": 0b000000
         }
         self.regs = {
             "R0": 0,
@@ -146,10 +147,15 @@ class BCompiler:
             return ord(c)
 
     def compile(self):
-        filepath = sys.argv[1]
+        filepath = None
+        if len(sys.argv) < 2:
+            filepath = "program.asm"
+        else:
+            filepath = sys.argv[1]
 
         if not os.path.isfile(filepath):
             print("File path {} does not exist. Exiting...".format(filepath))
+
             sys.exit()
 
         labels = {}
@@ -173,6 +179,10 @@ class BCompiler:
                         sourcelines.append(SourceLine(linecount, icount, line, m.group('instr'), argc, arga, argb))
                         print("Line {}: Found instruction {}({},{},{})".format(linecount, m.group('instr'), argc, arga, argb))
                         icount += 1
+                    elif "TRAP" in line.upper():
+                        sourcelines.append(SourceLine(linecount, icount, line, "trap", None, None, None))
+                        print("Line {}: Found instruction trap".format(linecount))
+                        icount += 1
             # Pass 2
             for line in sourcelines:
                 if line.opcode.upper() in self.instructions:
@@ -184,7 +194,9 @@ class BCompiler:
                     # print(args_stripped)
                     opcode_cat = opcode >> 3
                     # Special instruction
-                    if opcode_cat == 0b011:
+                    if upper_opcode == "TRAP":
+                        inst += "00000_00000_0000000000000000"
+                    elif opcode_cat == 0b011:
                         if upper_opcode == "LD":
                             inst += "{:05b}_{:05b}_{:016b}".format(self.regs[args_stripped[2]],
                                                                    self.regs[args_stripped[0]],
