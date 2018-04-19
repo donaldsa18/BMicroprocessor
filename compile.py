@@ -2,7 +2,7 @@ import sys
 import os
 import re
 import binascii
-
+import codecs
 
 class SourceLine:
     def __init__(self, line_num, inum, line, opcode, arg1, arg2, arg3):
@@ -105,6 +105,18 @@ class BCompiler:
             "LP": 28,
             "BP": 27
         }
+        self.types = {
+            "INTEGER": 1,
+            "FLOAT": 2,
+            "STRING": 3
+        }
+    def strToIntArr(self, str):
+        if str is None:
+            return [0]
+        parsed = codecs.getdecoder("unicode_escape")(str[1:-1])[0]
+        code_list = [ord(c) for c in parsed]
+        code_list.append(0)
+        return code_list
 
     def charToInt(self, char):
         if char is None:
@@ -214,11 +226,11 @@ class BCompiler:
                                                                    twos_comp((line.inum + 1 - labels[line.arg2]), 16))
                         elif upper_opcode == "LDR":
                             inst += "{:05b}_{:05b}_{:016b}".format(self.regs[args_stripped[1]], 0,
-                                                                   twos_comp((line.inum + 1 - labels[line.arg2]), 16))
+                                                                   twos_comp((line.inum + 1 - labels[line.arg1]), 16))
                         elif upper_opcode == "DISP":
                             inst += "{:05b}_{:05b}_{:016b}".format(self.regs[args_stripped[0]], 0, 0)
                         elif upper_opcode == "DISPC":
-                            inst += "{:05b}_{:05b}_{:016b}".format(0, 0, int(line.arg1))
+                            inst += "{:05b}_{:05b}_{:016b}".format(0, self.types[args_stripped[1]], int(line.arg1))
                         else:
                             print("Error: this shouldn't happen. Opcode='{}'".format(upper_opcode))
                     # Check if constant math operation
