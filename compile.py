@@ -3,6 +3,7 @@ import os
 import re
 import binascii
 import codecs
+import ctypes
 
 class SourceLine:
     def __init__(self, line_num, inum, line, opcode, arg1, arg2, arg3):
@@ -22,12 +23,38 @@ def twos_comp(val, bits):
     return val  # return positive value as is
 
 
+def is_int(val):
+    try:
+        int(val)
+        return True
+    except ValueError:
+        return False
+
+
+def is_float(val):
+    try:
+        float(val)
+        return True
+    except ValueError:
+        return False
+
+
+def str_to_int_arr(val):
+    # print("Parsing '{}'".format(val))
+    if val is None:
+        return [0]
+    parsed = codecs.getdecoder("unicode_escape")(val[1:-1])[0]
+    code_list = [int(ord(c)) for c in parsed]
+    code_list.append(0)
+    return code_list
+
 class BCompiler:
     def __init__(self):
         self.re_line = re.compile(
             r'^([A-Za-z0-9]+:\s+)?(?P<instr>[A-Za-z]{2,6})\s+(?P<argc>[^,]+)(,\s*(?P<arga>[^,]+))?(,(?P<argb>[^,;]+))?')
         self.re_label = re.compile(r'^(?P<label>[A-Za-z0-9]+):')
         self.re_char = re.compile(r"'(?P<escape>\\)?(?P<char>[^'\\])'")
+        self.re_disp_str = re.compile(r'^([A-Za-z0-9]+:\s+)?(?P<instr>[A-Za-z]{2,6})\s+(?P<arg>\"(?:[^\"]|\\\")*\")')
         self.instructions = {
             "LD": 0b011000,
             "ST": 0b011001,
@@ -65,7 +92,8 @@ class BCompiler:
             "SHLC": 0b111100,
             "SHRC": 0b111101,
             "SRAC": 0b111110,
-            "TRAP": 0b000000
+            "TRAP": 0b000000,
+            "DB": None
         }
         self.regs = {
             "R0": 0,
@@ -105,20 +133,8 @@ class BCompiler:
             "LP": 28,
             "BP": 27
         }
-        self.types = {
-            "INTEGER": 1,
-            "FLOAT": 2,
-            "STRING": 3
-        }
-    def strToIntArr(self, str):
-        if str is None:
-            return [0]
-        parsed = codecs.getdecoder("unicode_escape")(str[1:-1])[0]
-        code_list = [ord(c) for c in parsed]
-        code_list.append(0)
-        return code_list
 
-    def charToInt(self, char):
+    def char_to_int(self, char):
         if char is None:
             return 0
 
@@ -185,12 +201,29 @@ class BCompiler:
                         labels[m.group('label')] = icount + 1
                     m = self.re_line.match(line)
                     if m is not None:
-                        arga = self.charToInt(m.group('arga'))
-                        argb = self.charToInt(m.group('argb'))
-                        argc = self.charToInt(m.group('argc'))
-                        sourcelines.append(SourceLine(linecount, icount, line, m.group('instr'), argc, arga, argb))
-                        print("Line {}: Found instruction {}({},{},{})".format(linecount, m.group('instr'), argc, arga, argb))
-                        icount += 1
+                        arga = self.char_to_int(m.group('arga'))
+                        argb = self.char_to_int(m.group('argb'))
+                        argc = self.char_to_int(m.group('argc'))
+                        # Have to count the size of a dispc instruction since it has data after it
+                        if m.group('instr').upper() in ["DISPC", "DB"]:
+                            mstr = self.re_disp_str.match(line)
+                            if is_int(argc):
+                                sourcelines.append(SourceLine(linecount, icount, line, m.group('instr'), int(argc), None, None))
+                                icount += 2
+                                print("Line {}: Found int {}".format(linecount, int(argc)))
+                            elif is_float(argc):
+                                sourcelines.append(SourceLine(linecount, icount, line, m.group('instr'), float(argc), None, None))
+                                icount += 2
+                                print("Line {}: Found float {}".format(linecount, float(argc)))
+                            elif mstr is not None:
+                                str_data = str_to_int_arr(mstr.group('arg'))
+                                sourcelines.append(SourceLine(linecount, icount, line, m.group('instr'), str_data, None, None))
+                                icount += 1+int(len(str_data)/4)
+                                print("Line {}: Found string {}".format(linecount, mstr.group('arg')))
+                        else:
+                            sourcelines.append(SourceLine(linecount, icount, line, m.group('instr'), argc, arga, argb))
+                            print("Line {}: Found instruction {}({},{},{})".format(linecount, m.group('instr'), argc, arga, argb))
+                            icount += 1
                     elif "TRAP" in line.upper():
                         sourcelines.append(SourceLine(linecount, icount, line, "trap", None, None, None))
                         print("Line {}: Found instruction trap".format(linecount))
@@ -199,65 +232,127 @@ class BCompiler:
             for line in sourcelines:
                 if line.opcode.upper() in self.instructions:
                     upper_opcode = line.opcode.upper()
-                    opcode = self.instructions[upper_opcode]
-                    inst = "{:06b}_".format(opcode)
-                    args_stripped = [str(line.arg1).replace("$", "").upper(), str(line.arg2).replace("$", "").upper(),
-                                     str(line.arg3).replace("$", "").upper()]
-                    # print(args_stripped)
-                    opcode_cat = opcode >> 3
-                    # Special instruction
-                    if upper_opcode == "TRAP":
-                        inst += "00000_00000_0000000000000000"
-                    elif opcode_cat == 0b011:
-                        if upper_opcode == "LD":
+                    inst = ""
+                    if upper_opcode == "DB":
+                        if type(line.arg1) is int:
+                            inst += "{:031b}".format(twos_comp(line.arg1, 32))
+                        elif type(line.arg1) is float:
+                            inst += "{:031b}".format(bin(ctypes.c_uint.from_buffer(ctypes.c_float(line.arg1)).value))
+                        elif type(line.arg1) is list:
+                            num_bits = 0
+                            for i in range(0, len(line.arg1)):
+                                if (i + 1) % 4 == 0:
+                                    inst += "{:07b}".format(line.arg1[i])
+                                    num_bits += 7
+                                    # Pad string ending
+                                    if num_bits < 32:
+                                        inst += "_" + ("0" * (32 - num_bits))
+                                    if i == 3:
+                                        inst += " //START: " + line.line
+
+                                    # Don't print new line if this is the last character
+                                    if i != len(line.arg1):
+                                        inst += "\n"
+                                    num_bits = 0
+                                else:
+                                    inst += "{:07b}_".format(line.arg1[i])
+                                    num_bits += 7
+                            # Pad the last bits
+                            if 0 < num_bits < 32:
+                                inst += ("0" * (32 - num_bits))
+                    else:
+                        opcode = self.instructions[upper_opcode]
+                        inst += "{:06b}_".format(opcode)
+                        args_stripped = [str(line.arg1).replace("$", "").upper(), str(line.arg2).replace("$", "").upper(),
+                                         str(line.arg3).replace("$", "").upper()]
+                        # print(args_stripped)
+                        opcode_cat = opcode >> 3
+                        # Special instruction
+                        if upper_opcode == "TRAP":
+                            inst += "00000_00000_0000000000000000"
+                        elif opcode_cat == 0b011:
+                            if upper_opcode == "LD":
+                                inst += "{:05b}_{:05b}_{:016b}".format(self.regs[args_stripped[2]],
+                                                                       self.regs[args_stripped[0]],
+                                                                       twos_comp(int(line.arg2), 16))
+                            elif upper_opcode == "ST":
+                                inst += "{:05b}_{:05b}_{:016b}".format(self.regs[args_stripped[0]],
+                                                                       self.regs[args_stripped[2]],
+                                                                       twos_comp(int(line.arg2), 16))
+                            elif upper_opcode == "JMP":
+                                inst += "{:05b}_{:05b}_{:016b}".format(self.regs[args_stripped[1]],
+                                                                       self.regs[args_stripped[0]], 0)
+                            elif upper_opcode in ["BEQ", "BNE"]:
+                                inst += "{:05b}_{:05b}_{:016b}".format(self.regs[args_stripped[2]],
+                                                                       self.regs[args_stripped[0]],
+                                                                       twos_comp(int(((labels[line.arg2]-line.inum)/4)-1), 16))
+
+                            elif upper_opcode == "LDR":
+                                inst += "{:05b}_{:05b}_{:016b}".format(self.regs[args_stripped[1]], 0,
+                                                                       twos_comp(int(((labels[line.arg2] - line.inum) / 4) - 1), 16))
+                            elif upper_opcode == "DISP":
+                                inst += "{:05b}_{:05b}_{:016b}".format(self.regs[args_stripped[0]], 0, 0)
+                            elif upper_opcode == "DISPC":
+                                if type(line.arg1) is int:
+                                    inst += "{:05b}_{:05b}_{:016b}\n{:031b}".format(1, 0, 0, twos_comp(line.arg1, 32))
+                                elif type(line.arg1) is float:
+                                    inst += "{:05b}_{:05b}_{:016b}\n{:031b}".format(2, 0, 0, bin(ctypes.c_uint.from_buffer(ctypes.c_float(line.arg1)).value))
+                                elif type(line.arg1) is list:
+                                    inst += "{:02b}_".format(3)
+                                    num_bits = 8
+                                    for i in range(0, len(line.arg1)):
+                                        if (i + 1) % 4 == 0:
+                                            inst += "{:07b}".format(line.arg1[i])
+                                            num_bits += 7
+                                            # Pad string ending
+                                            if num_bits < 32:
+                                                inst += "_"+("0"*(32-num_bits))
+                                            if i == 3:
+                                                inst += " //START: "+line.line
+
+                                            # Don't print new line if this is the last character
+                                            if i != len(line.arg1):
+                                                inst += "\n"
+                                            num_bits = 0
+                                        else:
+                                            # print("charcode={}".format(line.arg1[i]))
+                                            inst += "{:07b}_".format(line.arg1[i])
+                                            num_bits += 7
+                                    # Pad the last bits
+                                    if 0 < num_bits < 32:
+                                        inst += "_" + ("0" * (32 - num_bits))
+                                else:
+                                    print("Error: this shouldn't happen. DISPC arg is a {}".format(type(line.arg1)))
+                            else:
+                                print("Error: this shouldn't happen. Opcode='{}'".format(upper_opcode))
+                        # Check if constant math operation
+                        elif opcode_cat == 0b110:
+                            args_stripped = args_stripped[-1]
+                            for arg in args_stripped:
+                                if arg not in self.regs:
+                                    print("Line {}: {} is not a register (const) opcode={}".format(line.line_num, arg,opcode))
+                                    sys.exit()
+                            if not line.arg3.isdigit():
+                                print("Line {}: Literal {} is not a number".format(line.line_num, line.arg3))
+                                sys.exit()
                             inst += "{:05b}_{:05b}_{:016b}".format(self.regs[args_stripped[2]],
                                                                    self.regs[args_stripped[0]],
                                                                    twos_comp(int(line.arg2), 16))
-                        elif upper_opcode == "ST":
-                            inst += "{:05b}_{:05b}_{:016b}".format(self.regs[args_stripped[0]],
-                                                                   self.regs[args_stripped[2]],
-                                                                   twos_comp(int(line.arg2), 16))
-                        elif upper_opcode == "JMP":
-                            inst += "{:05b}_{:05b}_{:016b}".format(self.regs[args_stripped[1]],
-                                                                   self.regs[args_stripped[0]], 0)
-                        elif upper_opcode in ["BEQ", "BNE"]:
-                            inst += "{:05b}_{:05b}_{:016b}".format(self.regs[args_stripped[2]],
-                                                                   self.regs[args_stripped[0]],
-                                                                   twos_comp((line.inum + 1 - labels[line.arg2]), 16))
-                        elif upper_opcode == "LDR":
-                            inst += "{:05b}_{:05b}_{:016b}".format(self.regs[args_stripped[1]], 0,
-                                                                   twos_comp((line.inum + 1 - labels[line.arg1]), 16))
-                        elif upper_opcode == "DISP":
-                            inst += "{:05b}_{:05b}_{:016b}".format(self.regs[args_stripped[0]], 0, 0)
-                        elif upper_opcode == "DISPC":
-                            inst += "{:05b}_{:05b}_{:016b}".format(0, self.types[args_stripped[1]], int(line.arg1))
-                        else:
-                            print("Error: this shouldn't happen. Opcode='{}'".format(upper_opcode))
-                    # Check if constant math operation
-                    elif opcode_cat == 0b110:
-                        args_stripped = args_stripped[-1]
-                        for arg in args_stripped:
-                            if arg not in self.regs:
-                                print(
-                                    "Line {}: {} is not a register (const) opcode={}".format(line.line_num, arg,
-                                                                                             opcode))
-                                sys.exit()
-                        if not line.arg3.isdigit():
-                            print("Line {}: Literal {} is not a number".format(line.line_num, line.arg3))
-                            sys.exit()
-                        inst += "{:05b}_{:05b}_{:016b}".format(self.regs[args_stripped[2]],
-                                                               self.regs[args_stripped[0]],
-                                                               twos_comp(int(line.arg2), 16))
-                    # Check if math operation
-                    elif opcode_cat == 0b100:
-                        for arg in args_stripped:
-                            if arg not in self.regs:
-                                print("Line {}: {} is not a register (math)".format(line.line_num, arg))
-                                sys.exit()
-                        inst += "{:05b}_{:05b}_{:05b}_{:011}".format(self.regs[args_stripped[2]],
-                                                                     self.regs[args_stripped[0]],
-                                                                     self.regs[args_stripped[1]], 0)
-                    fout.write('{} //{}\n'.format(inst, line.line))
+                        # Check if math operation
+                        elif opcode_cat == 0b100:
+                            for arg in args_stripped:
+                                if arg not in self.regs:
+                                    print("Line {}: {} is not a register (math)".format(line.line_num, arg))
+                                    sys.exit()
+                            inst += "{:05b}_{:05b}_{:05b}_{:011}".format(self.regs[args_stripped[2]],
+                                                                         self.regs[args_stripped[0]],
+                                                                         self.regs[args_stripped[1]], 0)
+                    if inst[-1] == '\n':
+                        inst = inst[:-1]
+                    if '\n' in inst:
+                        fout.write('{} //END: {}\n'.format(inst, line.line))
+                    else:
+                        fout.write('{} //{}\n'.format(inst, line.line))
 
                 else:
                     print("Line %d: invalid instruction %s".format(line.line_num, line.opcode))

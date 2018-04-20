@@ -40,7 +40,23 @@ typedef enum bit [5:0] {
 	EXIT = 6'b000000
 } opcode_t;
 
-typedef enum {request_instruction,read_instruction,exec_instruction,handle_ld,disable_mem_ld,disable_mem_st,handle_ldr,handle_alu,trap,two_empty_cycles,empty_cycle} cpu_state_t;
+typedef enum {
+	request_instruction,
+	read_instruction,
+	exec_instruction,
+	handle_ld,
+	disable_mem_ld,
+	disable_mem_st,
+	handle_ldr,
+	handle_alu,
+	trap,
+	two_empty_cycles,
+	empty_cycle,
+	read_string,
+	read_int,
+	read_float,
+	read_string_mem
+} cpu_state_t;
 
 typedef struct packed {
 	opcode_t opcode;
@@ -57,9 +73,19 @@ typedef struct packed {
 	bit [15:0] lit;
 } instruction_lit_t;
 
+typedef struct packed {
+	opcode_t opcode;
+	bit [1:0] datatype;
+	bit [6:0] charA;
+	bit [6:0] charB;
+	bit [6:0] charC;
+	bit [2:0] unused;
+} instruction_str_t;
+
 typedef union packed {
 	instruction_reg_t regular;
 	instruction_lit_t literal;
+	instruction_str_t str;
 	bit [31:0] bits;
 } instruction_t;
 

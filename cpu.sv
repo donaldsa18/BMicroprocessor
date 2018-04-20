@@ -172,11 +172,27 @@ always @(posedge clk, posedge reset) begin
 						nextstate <= disable_mem_st;
 					end
 					DISP: begin
-						txbuf = $sformatf("%s%c",txbuf,R[IR.literal.Rc][6:0]);
-						rdEn <= 1'b0;
+						case(IR.literal.Rc)
+							5'd1: begin
+								MAR <= R[IR.literal.Ra];
+								nextstate <= read_int;
+							end
+							5'd2: begin
+								MAR <= R[IR.literal.Ra];
+								nextstate <= read_float;
+							end
+							5'd3: begin
+								MAR <= R[IR.literal.Ra];
+								nextstate <= read_string_mem;
+							end
+							default: begin
+								txbuf <= "Invalid disp command ";
+								nextstate <= trap;
+							end
+						endcase
+						rdEn <= 1'b1;
 						wrEn <= 1'b0;
 						PC <= PC + 4;
-						nextstate <= two_empty_cycles;
 					end
 					JMP: begin
 						R[IR.literal.Rc] <= PC+4;
@@ -200,12 +216,50 @@ always @(posedge clk, posedge reset) begin
 						nextstate <= two_empty_cycles;
 					end
 					DISPC: begin
-						txbuf = $sformatf("%s%c",txbuf,IR.literal.lit[6:0]);
-						//tx <= IR.literal.lit[6:0];
-						rdEn <= 1'b0;
-						wrEn <= 1'b0;
-						PC <= PC + 4;
-						nextstate <= two_empty_cycles;
+						case(IR.literal.Rc)
+						5'd1: begin //print int
+							MAR <= PC+4;
+							rdEn <= 1'b1;
+							wrEn <= 1'b0;
+							PC <= PC + 8;
+							nextstate <= read_int;
+						end
+						5'd2: begin
+							MAR <= PC+4;
+							rdEn <= 1'b1;
+							wrEn <= 1'b0;
+							PC <= PC + 8;
+							nextstate <= read_float;
+						end
+						5'd3: begin
+							if(IR.str.charA != 0) begin
+								if(IR.str.charB != 0) begin
+									if(IR.str.charC != 0) begin
+										txbuf <= $sformatf("%s%c%c%c",txbuf,IR.str.charA,IR.str.charB,IR.str.charC);
+										nextstate <= read_string;
+										MAR <= PC+4;
+										rdEn <= 1'b1;
+										wrEn <= 1'b0;
+									end
+									else begin
+										txbuf <= $sformatf("%s%c%c",txbuf,IR.str.charA,IR.str.charB);
+										PC <= PC + 4;
+										nextstate <= two_empty_cycles;
+									end
+								end
+								else begin
+									txbuf <= $sformatf("%s%c",txbuf,IR.str.charA);
+									PC <= PC + 4;
+									nextstate <= two_empty_cycles;
+								end
+							end
+							else begin
+								txbuf <= "Invalid dispc command ";
+								nextstate <= trap;
+							end
+						end
+						
+						endcase
 					end
 					LDR: begin
 						MAR <= PC + 4 + (4*IR.literal.lit);
@@ -248,6 +302,74 @@ always @(posedge clk, posedge reset) begin
 			R[IR.regular.Rc] <= (IR.literal.Rc != 5'd31) ? ARc : 0;
 			rdEn <= 1'b0;
 			wrEn <= 1'b0;
+			nextstate <= empty_cycle;
+		end
+		read_string: begin
+			if(data[31:25] != 0) begin
+				if(data[24:18] != 0) begin
+					if(data[17:11] != 0) begin
+						if(data[10:4] != 0) begin
+							txbuf <= $sformatf("%s%c%c%c%c",txbuf,data[31:25],data[24:18],data[17:11],data[10:4]);
+							MAR <= MAR + 4;
+							nextstate <= read_string;
+						end
+						else begin
+							txbuf <= $sformatf("%s%c%c%c",txbuf,data[31:25],data[24:18],data[17:11]);
+							PC <= MAR + 4;
+							nextstate <= request_instruction;
+						end
+					end
+					else begin
+						txbuf <= $sformatf("%s%c%c",txbuf,data[31:25],data[24:18]);
+						PC <= MAR + 4;
+						nextstate <= request_instruction;
+					end
+				end
+				else begin
+					txbuf <= $sformatf("%s%c",txbuf,data[31:25]);
+					PC <= MAR + 4;
+					nextstate <= request_instruction;
+				end
+			end
+			else begin
+				PC <= MAR + 4;
+				nextstate <= request_instruction;
+			end
+		end
+		read_string_mem: begin
+			if(data[31:25] != 0) begin
+				if(data[24:18] != 0) begin
+					if(data[17:11] != 0) begin
+						if(data[10:4] != 0) begin
+							txbuf <= $sformatf("%s%c%c%c%c",txbuf,data[31:25],data[24:18],data[17:11],data[10:4]);
+							MAR <= MAR + 4;
+							nextstate <= read_string;
+						end
+						else begin
+							txbuf <= $sformatf("%s%c%c%c",txbuf,data[31:25],data[24:18],data[17:11]);
+							nextstate <= request_instruction;
+						end
+					end
+					else begin
+						txbuf <= $sformatf("%s%c%c",txbuf,data[31:25],data[24:18]);
+						nextstate <= request_instruction;
+					end
+				end
+				else begin
+					txbuf <= $sformatf("%s%c",txbuf,data[31:25]);
+					nextstate <= request_instruction;
+				end
+			end
+			else begin
+				nextstate <= request_instruction;
+			end
+		end
+		read_int: begin
+			txbuf <= $sformatf("%s%d",txbuf,data);
+			nextstate <= empty_cycle;
+		end
+		read_float: begin
+			txbuf <= $sformatf("%s%f",txbuf,data);
 			nextstate <= empty_cycle;
 		end
 		two_empty_cycles: begin
