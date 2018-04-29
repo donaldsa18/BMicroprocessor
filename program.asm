@@ -8,14 +8,14 @@ ADD R0,R1,R2;
 disp R2;
 dispc " ";
 
-////////////////////// stopped here //////////////////
-
 dispc "SUB";
-ST R0,5,R31;
-LD R31,5,R1;
+LDR label_a,R0;
+LDR label_b,R1;
 SUB R0,R1,R2;
-disp R1;
+disp R2;
 dispc " ";
+
+////////////////////// stopped here //////////////////
 
 dispc "MUL";
 ST R0,5,R31;
@@ -150,5 +150,5 @@ SRAC R0,R1,R2;
 disp R1;
 dispc " ";
 
-label_a: db 10;
-label_b: db 12;
+label_a: db 12;
+label_b: db 10;
