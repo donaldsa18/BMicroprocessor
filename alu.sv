@@ -14,7 +14,7 @@ module alu(Rc,Ra,Rb,opcode);
 			ADD: Rc <= Ra + Rb;
 			SUB: Rc <= Ra - Rb;
 			MUL: Rc <= Ra * Rb;
-			DIV: Rc <= Ra / Rb;
+			DIV: Rc <= (Rb != 0) ? (Ra / Rb) : 0;
 			CMPEQ: Rc <= (Ra == Rb);
 			CMPLT: Rc <= (Ra < Rb);
 			CMPLE: Rc <= (Ra <= Rb);
@@ -32,6 +32,10 @@ module alu(Rc,Ra,Rb,opcode);
 			SHLC: Rc <= Ra << Rb;
 			SHRC: Rc <= Ra >> Rb;
 			SRAC: Rc <= Ra >>> Rb;
+			CMPEQC: Rc <= (Ra == Rb);
+			CMPLTC: Rc <= (Ra < Rb);
+			CMPLEC: Rc <= (Ra <= Rb);
+			default: Rc <= {32{1'bz}};
 		endcase
 	end
 endmodule

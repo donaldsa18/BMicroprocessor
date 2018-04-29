@@ -21,7 +21,7 @@ endtask
 initial
 	reset_mem;
 
-always @(negedge reset)
+always @(posedge reset)
 	reset_mem;
 
 always @(posedge clk) begin

@@ -10,16 +10,16 @@ string txbuf = "";
 cpu c(tx,clk,reset);
 
 initial begin
-	clk = 1'b1;
+	clk = 1'b0;
 	forever #5 clk = !clk;
 end
 
 initial begin
 	startTx = 0;
 	reset = 0;
-	#1 reset = 1;
-	#1 reset = 0;
-	#2200 $stop;
+	//#1 reset = 1;
+	//#1 reset = 0;
+	#15000 $stop;
 end
 	
 always @(posedge clk) begin
