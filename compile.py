@@ -57,7 +57,7 @@ class BCompiler:
             r'^([^:]+:\s+)?(?P<instr>[A-Za-z]{2,6})\s+(?P<argc>[^,]+)?(,\s*(?P<arga>[^,]+))?(,(?P<argb>[^,;]+))?')
         self.re_label = re.compile(r'^(?P<label>[^:]+):')
         self.re_char = re.compile(r"'(?P<escape>\\)?(?P<char>[^'\\])'")
-        self.re_disp_str = re.compile(r'^([A-Za-z0-9]+:\s+)?(?P<instr>[A-Za-z]{2,6})\s+(?P<arg>\"(?:[^\"]|\\\")*\")')
+        self.re_disp_str = re.compile(r'^([^:]+:\s+)?(?P<instr>[A-Za-z]{2,6})\s+(?P<arg>\"(?:[^\"]|\\\")*\")')
         self.instructions = {
             "LD": 0b011000,
             "ST": 0b011001,
@@ -220,7 +220,6 @@ class BCompiler:
                         # Have to count the size of a dispc instruction since it has data after it
                         if m.group('instr').upper() == "DISPC":
                             mstr = self.re_disp_str.match(line)
-                            is_valid = False
                             if is_int(argc):
                                 sourcelines.append(
                                     SourceLine(linecount, icount, line, m.group('instr'), int(argc), None, None))
@@ -321,8 +320,12 @@ class BCompiler:
                         elif opcode_cat == 0b011:
                             if upper_opcode == "DISP":
                                 if args_stripped[1] in args_stripped[1]:
-                                    inst += "{:05b}_{:05b}_{:016b}".format(self.types[args_stripped[1]],
-                                                                           self.regs[args_stripped[0]], 0)
+                                    if args_stripped[1] in ["STR", "STRING"]:
+                                        inst += "{:05b}_{:05b}_{:016b}".format(self.types[args_stripped[1]], 0,
+                                                                               labels[line.arg1] - line.inum - 2)
+                                    else:
+                                        inst += "{:05b}_{:05b}_{:016b}".format(self.types[args_stripped[1]],
+                                                                               self.regs[args_stripped[0]], 0)
                                 else:
                                     print(
                                     "Error: this shouldn't happen. DISP type is a {}, not an int, float, or str".format(

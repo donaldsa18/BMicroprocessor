@@ -19,7 +19,7 @@ initial begin
 	reset = 0;
 	#1 reset = 1;
 	#1 reset = 0;
-	#10000 $stop;
+	#16500 $stop;
 end
 	
 always @(posedge clk) begin

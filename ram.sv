@@ -24,7 +24,7 @@ initial
 always @(posedge reset)
 	reset_mem;
 
-always @(posedge clk) begin
+always @(negedge clk) begin
 	if(wrEn && !rdEn)
 		mem[addr] <= data;
 end

@@ -190,17 +190,18 @@ always @(posedge clk) begin
 								rdEn <= 1'b0;
 								wrEn <= 1'b0;
 								txbuf <= $sformatf("%s%0d",txbuf,R[IR.literal.Ra]);
-								nextstate <= two_empty_cycles;
+								nextstate <= empty_cycle;
 							end
 							5'd2: begin
 								rdEn <= 1'b0;
 								wrEn <= 1'b0;
 								txbuf <= $sformatf("%s%0f",txbuf,R[IR.literal.Ra]);
-								nextstate <= two_empty_cycles;
+								nextstate <= empty_cycle;
 							end
 							5'd3: begin
 								rdEn <= 1'b1;
 								wrEn <= 1'b0;
+								MAR <= PC + 4 + (4*IR.literal.lit);
 								nextstate <= read_string_mem;
 							end
 							default: begin
@@ -256,7 +257,7 @@ always @(posedge clk) begin
 										PC <= PC + 4;
 										rdEn <= 1'b0;
 										wrEn <= 1'b0;
-										nextstate <= two_empty_cycles;
+										nextstate <= empty_cycle;
 									end
 								end
 								else begin
@@ -264,7 +265,7 @@ always @(posedge clk) begin
 									rdEn <= 1'b0;
 									wrEn <= 1'b0;
 									PC <= PC + 4;
-									nextstate <= two_empty_cycles;
+									nextstate <= empty_cycle;
 								end
 							end
 							else begin
@@ -296,7 +297,7 @@ always @(posedge clk) begin
 				3'b000: case(IR.literal.opcode)
 					EXIT: nextstate <= trap;
 					NOOP: begin
-						nextstate <= two_empty_cycles;
+						nextstate <= empty_cycle;
 						PC <= PC + 4;
 					end
 					default: invalidop;
@@ -310,38 +311,39 @@ always @(posedge clk) begin
 			wrEn <= 1'b0;
 			nextstate <= read_string;
 		end
+		read_next_str_mem: begin
+			MAR <= MAR+4;
+			rdEn <= 1'b1;
+			wrEn <= 1'b0;
+			nextstate <= read_string_mem;
+		end
 		handle_bne: begin
 			PC <= (R[IR.literal.Ra] != 0) ? (PC + 4 + (4*IR.literal.lit)) : (PC + 4);
-			nextstate <= empty_cycle;
+			nextstate <= request_instruction;
 		end
 		handle_beq: begin
 			PC <= (R[IR.literal.Ra] == 0) ? (PC + 4 + (4*IR.literal.lit)) : (PC + 4);
-			nextstate <= empty_cycle;
+			nextstate <= request_instruction;
 		end
 		handle_jmp: begin
 			PC <= R[IR.literal.Ra];
-			nextstate <= empty_cycle;
+			nextstate <= request_instruction;
 		end
 		handle_ld: begin
 			R[IR.literal.Rc] <= data;
 			PC <= PC + 4;
-			nextstate <= disable_mem_ld;
-		end
-		disable_mem_ld: begin
-			rdEn <= 1'b0;
-			wrEn <= 1'b0;
 			nextstate <= request_instruction;
 		end
 		disable_mem_st: begin
 			rdEn <= 1'b0;
 			wrEn <= 1'b0;
-			nextstate = empty_cycle;
+			nextstate = request_instruction;
 		end
 		handle_alu: begin
 			R[IR.regular.Rc] <= (IR.regular.Rc != 5'd31) ? ARc : 0;
 			rdEn <= 1'b0;
 			wrEn <= 1'b0;
-			nextstate <= empty_cycle;
+			nextstate <= request_instruction;
 		end
 		read_string: begin
 			if(data[31:25] != 0) begin
@@ -379,9 +381,8 @@ always @(posedge clk) begin
 				if(data[24:18] != 0) begin
 					if(data[17:11] != 0) begin
 						if(data[10:4] != 0) begin
-							txbuf <= $sformatf("%s%c%c%c%c",txbuf,{1'b0,data[31:25]},{1'b0,data[24:18]},{1'b0,data[17:11]},{1'b0,data[10:4]});
-							MAR <= MAR + 4;
-							nextstate <= read_string;
+							txbuf <= $sformatf("%s%c%c%c%c",txbuf,{1'b0,data[31:25]},{1'b0,data[24:18]},{1'b0,data[17:11]},{1'b0,data[10:4]});	
+							nextstate <= read_next_str_mem;
 						end
 						else begin
 							txbuf <= $sformatf("%s%c%c%c",txbuf,{1'b0,data[31:25]},{1'b0,data[24:18]},{1'b0,data[17:11]});
@@ -404,18 +405,13 @@ always @(posedge clk) begin
 		end
 		read_int: begin
 			txbuf <= $sformatf("%s%0d",txbuf,data);
-			nextstate <= empty_cycle;
+			nextstate <= request_instruction;
 			PC <= PC + 8;
 		end
 		read_float: begin
 			txbuf <= $sformatf("%s%0f",txbuf,data);
-			nextstate <= empty_cycle;
+			nextstate <= request_instruction;
 			PC <= PC + 8;
-		end
-		two_empty_cycles: begin
-			rdEn <= 1'b0;
-			wrEn <= 1'b0;
-			nextstate <= empty_cycle;
 		end
 		empty_cycle: begin
 			rdEn <= 1'b0;
