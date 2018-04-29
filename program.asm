@@ -1,3 +1,9 @@
+BEQ R1,start_label,R2;
+DISPC "\nPassed all tests\n";
+trap;
+
+start_label:
+
 DISPC "Hello world!";
 LDR label_a,R0;
 LDR label_b,R1;
@@ -189,6 +195,7 @@ DISP R2,int;
 LDR label_sra,R3;
 CMPEQ R2,R3,R4
 BEQ R4,failedSRAC,R3;
+
 LDR label_neg,R0;
 
 DISPC "\nSRAC -4=";
@@ -198,7 +205,17 @@ LDR label_sra_neg,R3;
 CMPEQ R2,R3,R4;
 BEQ R4,failedSRAC,R3;
 
-DISPC "\nPassed all tests\n";
+DISPC "\nST -15=";
+ST R0,4000,R31;
+LD R31,4000,R1;
+DISP R1,int;
+CMPEQ R0,R1,R4;
+BEQ R4,failedST,R3;
+
+
+LDR label_1,R1;
+JMP R31,R0;
+
 trap;
 
 failedLD: DISPC "\nFailed LD\n";
@@ -268,6 +285,8 @@ trap;
 failedSHRC: DISPC "\nFailed SHRC\n";
 trap;
 failedSRAC: DISPC "\nFailed SRAC\n";
+trap;
+failedST: DISPC "\nFailed ST\n";
 trap;
 
 label_a: DB 15;

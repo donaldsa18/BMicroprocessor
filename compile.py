@@ -220,6 +220,7 @@ class BCompiler:
                         # Have to count the size of a dispc instruction since it has data after it
                         if m.group('instr').upper() == "DISPC":
                             mstr = self.re_disp_str.match(line)
+                            is_valid = False
                             if is_int(argc):
                                 sourcelines.append(
                                     SourceLine(linecount, icount, line, m.group('instr'), int(argc), None, None))
@@ -230,7 +231,7 @@ class BCompiler:
                                     SourceLine(linecount, icount, line, m.group('instr'), float(argc), None, None))
                                 icount += 2
                                 print("Line {}: Found float {}".format(linecount, float(argc)))
-                            if mstr is not None:
+                            elif mstr is not None:
                                 str_data = str_to_int_arr(mstr.group('arg'))
                                 sourcelines.append(
                                     SourceLine(linecount, icount, line, m.group('instr'), str_data, None, None))
@@ -251,7 +252,7 @@ class BCompiler:
                                     SourceLine(linecount, icount, line, m.group('instr'), float(argc), None, None))
                                 icount += 1
                                 print("Line {}: Found float {}".format(linecount, float(argc)))
-                            if mstr is not None:
+                            elif mstr is not None:
                                 str_data = str_to_int_arr(mstr.group('arg'))
                                 sourcelines.append(
                                     SourceLine(linecount, icount, line, m.group('instr'), str_data, None, None))

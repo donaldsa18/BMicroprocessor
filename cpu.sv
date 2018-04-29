@@ -174,7 +174,6 @@ always @(posedge clk) begin
 						MAR <= R[IR.literal.Ra] + IR.literal.lit;
 						rdEn <= 1'b1;
 						wrEn <= 1'b0;
-						PC <= PC + 4;
 						nextstate <= handle_ld;
 					end
 					ST: begin
