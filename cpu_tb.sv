@@ -17,9 +17,9 @@ end
 initial begin
 	startTx = 0;
 	reset = 0;
-	//#1 reset = 1;
-	//#1 reset = 0;
-	#15000 $stop;
+	#1 reset = 1;
+	#1 reset = 0;
+	#10000 $stop;
 end
 	
 always @(posedge clk) begin

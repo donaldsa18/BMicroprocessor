@@ -119,12 +119,12 @@ task printString;
 		else begin
 			tx <= txbuf[0];
 			//Accomidate for the first skipped tx buf
-			if(tx_first && txbuf.len() == 2) begin
+			/*if(tx_first && txbuf.len() == 2) begin
 				txbuf <= txbuf.substr(2,txbuf.len()-1);
 				tx_first <= 0;
 			end
-			else
-				txbuf <= txbuf.substr(1,txbuf.len()-1);
+			else*/
+			txbuf <= txbuf.substr(1,txbuf.len()-1);
 		end
 	end
 	//End each message with all 1's
@@ -132,6 +132,11 @@ task printString;
 		tx <= 7'b1111111;
 		tx_status <= 1;
 	end
+endtask
+
+task trimString;
+	if(txbuf.len() > 0 && !tx_status)
+		txbuf <= txbuf.substr(1,txbuf.len()-1);
 endtask
 
 initial
@@ -185,13 +190,13 @@ always @(posedge clk) begin
 							5'd1: begin
 								rdEn <= 1'b0;
 								wrEn <= 1'b0;
-								txbuf <= $sformatf("%s%d ",txbuf,R[IR.literal.Ra]);
+								txbuf <= $sformatf("%s%0d",txbuf,R[IR.literal.Ra]);
 								nextstate <= two_empty_cycles;
 							end
 							5'd2: begin
 								rdEn <= 1'b0;
 								wrEn <= 1'b0;
-								txbuf <= $sformatf("%s%f ",txbuf,R[IR.literal.Ra]);
+								txbuf <= $sformatf("%s%0f",txbuf,R[IR.literal.Ra]);
 								nextstate <= two_empty_cycles;
 							end
 							5'd3: begin
@@ -248,7 +253,7 @@ always @(posedge clk) begin
 										wrEn <= 1'b0;
 									end
 									else begin
-										txbuf <= $sformatf("%s%c%c ",txbuf,IR.str.charA,IR.str.charB);
+										txbuf <= $sformatf("%s%c%c",txbuf,IR.str.charA,IR.str.charB);
 										PC <= PC + 4;
 										rdEn <= 1'b0;
 										wrEn <= 1'b0;
@@ -256,7 +261,7 @@ always @(posedge clk) begin
 									end
 								end
 								else begin
-									txbuf <= $sformatf("%s%c ",txbuf,IR.str.charA);
+									txbuf <= $sformatf("%s%c",txbuf,IR.str.charA);
 									rdEn <= 1'b0;
 									wrEn <= 1'b0;
 									PC <= PC + 4;
@@ -348,19 +353,19 @@ always @(posedge clk) begin
 							nextstate <= read_next_str;
 						end
 						else begin
-							txbuf <= $sformatf("%s%c%c%c ",txbuf,{1'b0,data[31:25]},{1'b0,data[24:18]},{1'b0,data[17:11]});
+							txbuf <= $sformatf("%s%c%c%c",txbuf,{1'b0,data[31:25]},{1'b0,data[24:18]},{1'b0,data[17:11]});
 							PC <= MAR + 4;
 							nextstate <= request_instruction;
 						end
 					end
 					else begin
-						txbuf <= $sformatf("%s%c%c ",txbuf,{1'b0,data[31:25]},{1'b0,data[24:18]});
+						txbuf <= $sformatf("%s%c%c",txbuf,{1'b0,data[31:25]},{1'b0,data[24:18]});
 						PC <= MAR + 4;
 						nextstate <= request_instruction;
 					end
 				end
 				else begin
-					txbuf <= $sformatf("%s%c ",txbuf,{1'b0,data[31:25]});
+					txbuf <= $sformatf("%s%c",txbuf,{1'b0,data[31:25]});
 					PC <= MAR + 4;
 					nextstate <= request_instruction;
 				end
@@ -380,17 +385,17 @@ always @(posedge clk) begin
 							nextstate <= read_string;
 						end
 						else begin
-							txbuf <= $sformatf("%s%c%c%c ",txbuf,{1'b0,data[31:25]},{1'b0,data[24:18]},{1'b0,data[17:11]});
+							txbuf <= $sformatf("%s%c%c%c",txbuf,{1'b0,data[31:25]},{1'b0,data[24:18]},{1'b0,data[17:11]});
 							nextstate <= request_instruction;
 						end
 					end
 					else begin
-						txbuf <= $sformatf("%s%c%c ",txbuf,{1'b0,data[31:25]},{1'b0,data[24:18]});
+						txbuf <= $sformatf("%s%c%c",txbuf,{1'b0,data[31:25]},{1'b0,data[24:18]});
 						nextstate <= request_instruction;
 					end
 				end
 				else begin
-					txbuf <= $sformatf("%s%c ",txbuf,{1'b0,data[31:25]});
+					txbuf <= $sformatf("%s%c",txbuf,{1'b0,data[31:25]});
 					nextstate <= request_instruction;
 				end
 			end
@@ -399,12 +404,12 @@ always @(posedge clk) begin
 			end
 		end
 		read_int: begin
-			txbuf <= $sformatf("%s%d ",txbuf,data);
+			txbuf <= $sformatf("%s%0d",txbuf,data);
 			nextstate <= empty_cycle;
 			PC <= PC + 8;
 		end
 		read_float: begin
-			txbuf <= $sformatf("%s%f ",txbuf,data);
+			txbuf <= $sformatf("%s%0f",txbuf,data);
 			nextstate <= empty_cycle;
 			PC <= PC + 8;
 		end
