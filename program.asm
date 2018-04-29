@@ -1,13 +1,9 @@
-<<<<<<< HEAD
 BEQ R1,start_label,R2;
 DISPC "\nPassed JMP\nPassed all tests\n";
 trap;
-=======
->>>>>>> dfcfdc1b7f77541e55c19ddee11bd7e39b7c2f6b
 
-dispc "Hello world!";
+start_label:
 
-<<<<<<< HEAD
 DISPC "Hello world!";
 
 ; Test string printing
@@ -236,106 +232,130 @@ BEQ R4,failedST,R3;
 dispc "\nPassed LD/ST";
 
 ; Test all math operations
-=======
-dispc "ADD";
->>>>>>> dfcfdc1b7f77541e55c19ddee11bd7e39b7c2f6b
 LDR label_a,R0;
 LDR label_b,R1;
+
+DISPC "\nADD 17=";
 ADD R0,R1,R2;
-disp R2;
-dispc " ";
+DISP R2,int;
+LDR label_add,R3;
+CMPEQ R2,R3,R4
+BEQ R4,failedADD,R3;
 
-dispc "SUB";
-LDR label_a,R0;
-LDR label_b,R1;
+DISPC "\nSUB 13=";
 SUB R0,R1,R2;
-disp R2;
-dispc " ";
+DISP R2,int;
+LDR label_sub,R3;
+CMPEQ R2,R3,R4
+BEQ R4,failedSUB,R3;
 
-////////////////////// stopped here //////////////////
-
-dispc "MUL";
-ST R0,5,R31;
-LD R31,5,R1;
+DISPC "\nMUL 30=";
 MUL R0,R1,R2;
-disp R1;
-dispc " ";
+DISP R2,int;
+LDR label_mul,R3;
+CMPEQ R2,R3,R4
+BEQ R4,failedMUL,R3;
 
-dispc "DIV";
-ST R0,5,R31;
-LD R31,5,R1;
+DISPC "\nDIV 7=";
 DIV R0,R1,R2;
-disp R1;
-dispc " ";
+DISP R2,int;
+LDR label_div,R3;
+CMPEQ R2,R3,R4
+BEQ R4,failedDIV,R3;
 
-dispc "CMPEQ";
-ST R0,5,R31;
-LD R31,5,R1;
+DISPC "\nCMPEQ 0=";
 CMPEQ R0,R1,R2;
-disp R1;
-dispc " ";
+DISP R2,int;
+LDR label_0,R3;
+CMPEQ R2,R3,R4
+BEQ R4,failedCMPEQ,R3;
 
-dispc "CMPLT";
-ST R0,5,R31;
-LD R31,5,R1;
+DISPC "\nCMPEQ 1=";
+CMPEQ R1,R1,R2;
+DISP R2,int;
+LDR label_1,R3;
+CMPEQ R2,R3,R4
+BEQ R4,failedCMPEQ,R3;
+
+DISPC "\nCMPLT 0=";
 CMPLT R0,R1,R2;
-disp R1;
-dispc " ";
+DISP R2,int;
+LDR label_0,R3;
+CMPEQ R2,R3,R4
+BEQ R4,failedCMPLT,R3;
 
-dispc "CMPLE";
-ST R0,5,R31;
-LD R31,5,R1;
+DISPC "\nCMPLT 1=";
+CMPLT R1,R0,R2;
+DISP R2,int;
+LDR label_1,R3;
+CMPEQ R2,R3,R4
+BEQ R4,failedCMPLT,R3;
+
+DISPC "\nCMPLE 0=";
 CMPLE R0,R1,R2;
-disp R1;
-dispc " ";
+DISP R2,int;
+LDR label_0,R3;
+CMPEQ R2,R3,R4
+BEQ R4,failedCMPLE,R3;
 
-dispc "AND";
-ST R0,5,R31;
-LD R31,5,R1;
+DISPC "\nCMPLE 1=";
+CMPLE R0,R0,R2;
+DISP R2,int;
+LDR label_1,R3;
+CMPEQ R2,R3,R4
+BEQ R4,failedCMPLE,R3;
+
+DISPC "\nCMPLE 1=";
+CMPLE R1,R0,R2;
+DISP R2,int;
+LDR label_1,R3;
+CMPEQ R2,R3,R4
+BEQ R4,failedCMPLE,R3;
+
+DISPC "\nAND 2=";
 AND R0,R1,R2;
-disp R1;
-dispc " ";
+DISP R2,int;
+LDR label_and,R3;
+CMPEQ R2,R3,R4
+BEQ R4,failedAND,R3;
 
-dispc "OR";
-ST R0,5,R31;
-LD R31,5,R1;
+DISPC "\nOR 15=";
 OR R0,R1,R2;
-disp R1;
-dispc " ";
+DISP R2,int;
+LDR label_or,R3;
+CMPEQ R2,R3,R4
+BEQ R4,failedOR,R3;
 
-dispc "XOR";
-ST R0,5,R31;
-LD R31,5,R1;
+DISPC "\nXOR 13=";
 XOR R0,R1,R2;
-disp R1;
-dispc " ";
+DISP R2,int;
+LDR label_xor,R3;
+CMPEQ R2,R3,R4
+BEQ R4,failedXOR,R3;
 
-dispc "XNOR";
-ST R0,5,R31;
-LD R31,5,R1;
+DISPC "\nXNOR -14=";
 XNOR R0,R1,R2;
-disp R1;
-dispc " ";
+DISP R2,int;
+LDR label_xnor,R3;
+CMPEQ R2,R3,R4
+BEQ R4,failedXNOR,R3;
 
-dispc "SHL";
-ST R0,5,R31;
-LD R31,5,R1;
+DISPC "\nSHL 60=";
 SHL R0,R1,R2;
-disp R1;
-dispc " ";
+DISP R2,int;
+LDR label_shl,R3;
+CMPEQ R2,R3,R4
+BEQ R4,failedSHL,R3;
 
-dispc "SHR";
-ST R0,5,R31;
-LD R31,5,R1;
+DISPC "\nSHR 3=";
 SHR R0,R1,R2;
-disp R1;
-dispc " ";
+DISP R2,int;
+LDR label_shr,R3;
+CMPEQ R2,R3,R4
+BEQ R4,failedSHR,R3;
 
-dispc "SRA";
-ST R0,5,R31;
-LD R31,5,R1;
+DISPC "\nSRA 3=";
 SRA R0,R1,R2;
-<<<<<<< HEAD
 DISP R2,int;
 LDR label_shr,R3;
 CMPEQ R2,R3,R4
@@ -516,59 +536,3 @@ label_xnor: DB -14;
 label_0: DB 0;
 label_1: DB 1;
 label_str: DB "\nDisplay string passed"
-=======
-disp R1;
-dispc " ";
-
-dispc "ANDC";
-ST R0,5,R31;
-LD R31,5,R1;
-ANDC R0,R1,R2;
-disp R1;
-dispc " ";
-
-dispc "ORC";
-ST R0,5,R31;
-LD R31,5,R1;
-ORC R0,R1,R2;
-disp R1;
-dispc " ";
-
-dispc "XORC";
-ST R0,5,R31;
-LD R31,5,R1;
-XORC R0,R1,R2;
-disp R1;
-dispc " ";
-
-dispc "XNORC";
-ST R0,5,R31;
-LD R31,5,R1;
-XNORC R0,R1,R2;
-disp R1;
-dispc " ";
-
-dispc "SHLC";
-ST R0,5,R31;
-LD R31,5,R1;
-SHLC R0,R1,R2;
-disp R1;
-dispc " ";
-
-dispc "SHRC";
-ST R0,5,R31;
-LD R31,5,R1;
-SHRC R0,R1,R2;
-disp R1;
-dispc " ";
-
-dispc "SRAC";
-ST R0,5,R31;
-LD R31,5,R1;
-SRAC R0,R1,R2;
-disp R1;
-dispc " ";
-
-label_a: db 12;
-label_b: db 10;
->>>>>>> dfcfdc1b7f77541e55c19ddee11bd7e39b7c2f6b
