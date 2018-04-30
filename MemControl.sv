@@ -1,49 +1,30 @@
-
+/*
+*
+* Memory Controller
+*
+* Authors: Anthony Donaldson, Matthew Erhardt
+*
+*/
 
 module MemControl(data,addr,clk,reset,rw,valid);
 import InstructionStruct::*;
 inout [DWIDTH-1:0] data;
-input clk,reset,rw,valid;
 input [CPUAWIDTH-1:0] addr;
+input clk,reset,rw,valid;
 
-reg [AWIDTH-1:0] ramAddr;
+localparam N = 2^(CPUAWIDTH-AWIDTH);
 
-//localparam N = 2^(CPUAWIDTH-AWIDTH);
-reg rdEn, wrEn;
-//Could add 15 more ram modules with for loop
-ram mod(data,ramAddr,rdEn,wrEn,reset,clk);
-/*
+//Translate high 4 bits into enables for each module
+reg [N-1:0] rdEn,wrEn;
+assign rdEn = (valid && rw) ? (1 << addr[CPUAWIDTH-1:AWIDTH+3]) : 0;
+assign wrEn = (valid && !rw) ? (1 << addr[CPUAWIDTH-1:AWIDTH+3]) : 0;
+
+//Generate RAM modules
 generate
 	genvar i;
 	for(i = 0; i < N; i++) begin: gen_ram
-		ram mod(ramData,ramAddr,rdEn[i],wrEn[i],clk);
+		ram mod(data,addr[AWIDTH+2:2],rdEn[i],wrEn[i],reset,clk);
 	end
-endgenerate*/
-
-initial begin
-	rdEn = 1'b0;
-	wrEn = 1'b0;
-	ramAddr = 0;
-end
-
-always @(negedge clk) begin
-	if(valid) begin
-		if(rw) begin //read operation
-			ramAddr = addr[AWIDTH+2:2];
-			rdEn = 1'b1;
-			wait(~clk);
-			wait(clk);
-			rdEn = 1'b0;
-		end
-		else begin //write operation
-			//Not using first 2 bits because only address 32 bits
-			ramAddr = addr[AWIDTH+2:2];
-			wrEn = 1'b1;
-			wait(~clk);
-			wait(clk);
-			wrEn = 1'b0;
-		end
-	end
-end
+endgenerate
 
 endmodule

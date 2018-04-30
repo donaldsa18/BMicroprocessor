@@ -6,6 +6,11 @@ import codecs
 import ctypes
 import math
 
+# B Microprocessor Assembler
+# Usage: python compile.py program.asm
+# Outputs a .bin file of the same name filled with 32-bit words
+# of the assembly program written in binary formatted for Verilog
+# Based off of https://gist.github.com/TerrorBite/2464756
 
 class SourceLine:
     def __init__(self, line_num, inum, line, opcode, arg1, arg2, arg3):

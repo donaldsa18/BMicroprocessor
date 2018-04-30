@@ -1,4 +1,10 @@
-
+/*
+*
+* B-Processor Testbench
+*
+* Authors: Anthony Donaldson, Matthew Erhardt
+*
+*/
 `timescale 1ns / 1ns
 
 module cpu_tb;

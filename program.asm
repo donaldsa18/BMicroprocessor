@@ -221,6 +221,8 @@ dispc "\nPassed BNE branch";
 BNE R31,failedBNE,R3;
 dispc "\nPassed BNE non branch";
 
+LDR label_neg,R0;
+
 ; Test storing/loading a word into memory
 
 DISPC "\nST -15=";

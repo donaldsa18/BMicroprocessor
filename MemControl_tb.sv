@@ -1,3 +1,10 @@
+/*
+*
+* Memory Controller Testbench
+*
+* Authors: Anthony Donaldson, Matthew Erhardt
+*
+*/
 module MemControl_tb;
 
 import InstructionStruct::*;

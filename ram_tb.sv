@@ -1,3 +1,10 @@
+/*
+*
+* RAM Module Testbench
+*
+* Authors: Anthony Donaldson, Matthew Erhardt
+*
+*/
 module ram_tb;
 import InstructionStruct::*;
 tri [DWIDTH-1:0] data;

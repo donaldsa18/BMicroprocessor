@@ -1,4 +1,10 @@
-
+/*
+*
+* 32-bit ALU
+*
+* Authors: Anthony Donaldson, Matthew Erhardt
+*
+*/
 module alu(Rc,Ra,Rb,opcode);
 	import InstructionStruct::*;
 	output [DWIDTH-1:0] Rc;

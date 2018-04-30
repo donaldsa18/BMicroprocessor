@@ -1,4 +1,10 @@
-
+/*
+*
+* RAM Module
+*
+* Authors: Anthony Donaldson, Matthew Erhardt
+*
+*/
 module ram(data,addr,rdEn,wrEn,reset,clk);
 import InstructionStruct::*;
 inout [DWIDTH-1:0] data;

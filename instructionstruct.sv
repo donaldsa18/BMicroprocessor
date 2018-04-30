@@ -46,7 +46,6 @@ typedef enum {
 	read_instruction,
 	exec_instruction,
 	handle_ld,
-	disable_mem_st,
 	handle_ldr,
 	handle_alu,
 	trap,
