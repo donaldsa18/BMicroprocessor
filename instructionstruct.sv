@@ -1,5 +1,6 @@
 package InstructionStruct;
 `include "params.svh"
+
 typedef enum bit [5:0] {
 	LD     = 6'b011000,
 	ST     = 6'b011001,
@@ -60,6 +61,78 @@ typedef enum {
 	handle_bne,
 	read_next_str
 } cpu_state_t;
+
+typedef enum bit [2:0] {
+	mar_noop = 3'd0,
+	mar_pc = 3'd1,
+	mar_pc_incr = 3'd2,
+	mar_ra = 3'd3,
+	mar_jmp = 3'd4,
+	mar_incr = 3'd5
+} MAR_OP_t;
+
+typedef enum bit {
+	ir_noop = 1'b0,
+	ir_data = 1'b1
+} IR_OP_t;
+
+typedef enum bit {
+	mdr_noop = 1'b0,
+	mdr_rc = 1'b1
+} MDR_OP_t;
+
+typedef enum bit [2:0] {
+	pc_noop = 3'd0,
+	pc_incr = 3'd1,
+	pc_jmp = 3'd2,
+	pc_ra = 3'd3,
+	pc_mar = 3'd4,
+	pc_incr2 = 3'd5
+} PC_OP_t;
+
+typedef enum bit [3:0] {
+	txbuf_noop = 4'd0,
+	txbuf_data_1 = 4'd1,
+	txbuf_data_2 = 4'd2,
+	txbuf_data_3 = 4'd3,
+	txbuf_data_4 = 4'd4,
+	txbuf_chars_1 = 4'd5,
+	txbuf_chars_2 = 4'd6,
+	txbuf_chars_3 = 4'd7,
+	txbuf_err = 4'd8,
+	txbuf_int = 4'd9,
+	txbuf_float = 4'd10,
+	txbuf_int_ra = 4'd11,
+	txbuf_float_ra = 4'd12
+} TXBUF_OP_t;
+
+typedef enum bit [1:0] {
+	rc_noop = 2'd0,
+	rc_pc_incr = 2'd1,
+	rc_data = 2'd2,
+	rc_arc = 2'd3
+} RC_OP_t;
+
+typedef enum bit {
+	ara_noop = 1'b0,
+	ara_ra = 1'b1
+} ARA_OP_t;
+
+typedef enum bit[1:0] {
+	arb_noop = 2'd0,
+	arb_rb = 2'd1,
+	arb_lit = 2'd2
+} ARB_OP_t;
+
+typedef enum bit {
+	read_on = 1'b1,
+	read_off = 1'b0
+} read_t;
+
+typedef enum bit {
+	write_on = 1'b1,
+	write_off = 1'b0
+} write_t;
 
 typedef struct packed {
 	opcode_t opcode;

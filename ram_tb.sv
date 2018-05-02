@@ -22,6 +22,7 @@ end
 assign data = (wrEn) ? datareg : {DWIDTH{1'bz}};
 
 initial begin
+	datareg = 0;
 	rdEn = 0;
 	wrEn = 0;
 	reset = 1;
